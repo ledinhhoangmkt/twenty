@@ -4666,6 +4666,7 @@ input CreateEmailingDomainInput {
 input RunAgentInput {
   agentUniversalIdentifier: String!
   prompt: String!
+  runAsWorkspaceMemberId: UUID
 }
 
 input CreateWebhookInput {
