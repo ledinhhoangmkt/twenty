@@ -6347,6 +6347,7 @@ export type ViewGroup = {
 };
 
 export enum ViewKey {
+  FIELDS_WIDGET = 'FIELDS_WIDGET',
   INDEX = 'INDEX'
 }
 
