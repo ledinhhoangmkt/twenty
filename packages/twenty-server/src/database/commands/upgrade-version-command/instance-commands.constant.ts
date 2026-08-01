@@ -132,6 +132,7 @@ import { AddChannelWebhookSubscriptionExternalIdIndexesFastInstanceCommand } fro
 import { AddIsHiddenToAgentMessageFastInstanceCommand } from './2-25/2-25-instance-command-fast-1785230296000-add-is-hidden-to-agent-message';
 import { AddConnectedAccountHandleProviderIndexFastInstanceCommand } from 'src/database/commands/upgrade-version-command/2-26/2-26-instance-command-fast-1785420705255-add-connected-account-handle-provider-index';
 import { AddIsSystemSideEffectToViewFieldGroupFastInstanceCommand } from 'src/database/commands/upgrade-version-command/2-27/2-27-instance-command-fast-1785504603000-add-is-system-side-effect-to-view-field-group';
+import { AddFieldsWidgetViewKeyFastInstanceCommand } from 'src/database/commands/upgrade-version-command/2-27/2-27-instance-command-fast-1785504606000-add-fields-widget-view-key';
 
 export const INSTANCE_COMMANDS = [
   AddViewFieldGroupIdIndexOnViewFieldFastInstanceCommand,
@@ -266,4 +267,5 @@ export const INSTANCE_COMMANDS = [
   AddIsHiddenToAgentMessageFastInstanceCommand,
   AddConnectedAccountHandleProviderIndexFastInstanceCommand,
   AddIsSystemSideEffectToViewFieldGroupFastInstanceCommand,
+  AddFieldsWidgetViewKeyFastInstanceCommand,
 ];
