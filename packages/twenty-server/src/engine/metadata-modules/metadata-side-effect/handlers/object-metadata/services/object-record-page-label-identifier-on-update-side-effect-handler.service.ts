@@ -30,6 +30,7 @@ export class ObjectRecordPageLabelIdentifierOnUpdateSideEffectHandlerService ext
 ) {
   buildSideEffects({
     flatEntity,
+    allFlatEntityOperationRecordByMetadataName,
     relatedFlatEntityMaps,
   }: BuildSideEffectsArgs<'objectMetadata'>): MetadataSideEffectResult {
     const updatedFlatObjectMetadata = flatEntity as UniversalFlatObjectMetadata;
@@ -116,6 +117,7 @@ export class ObjectRecordPageLabelIdentifierOnUpdateSideEffectHandlerService ext
         previousLabelIdentifierFieldMetadataUniversalIdentifier,
         recordPageViewUniversalIdentifier,
         recordPageFlatViewFields,
+        allFlatEntityOperationRecordByMetadataName,
         relatedFlatEntityMaps,
       });
 
@@ -159,14 +161,29 @@ export class ObjectRecordPageLabelIdentifierOnUpdateSideEffectHandlerService ext
     previousLabelIdentifierFieldMetadataUniversalIdentifier,
     recordPageViewUniversalIdentifier,
     recordPageFlatViewFields,
+    allFlatEntityOperationRecordByMetadataName,
     relatedFlatEntityMaps,
   }: {
     previousLabelIdentifierFieldMetadataUniversalIdentifier: string | null;
     recordPageViewUniversalIdentifier: string;
     recordPageFlatViewFields: UniversalFlatViewField[];
+    allFlatEntityOperationRecordByMetadataName: BuildSideEffectsArgs<'objectMetadata'>['allFlatEntityOperationRecordByMetadataName'];
     relatedFlatEntityMaps: BuildSideEffectsArgs<'objectMetadata'>['relatedFlatEntityMaps'];
   }): UniversalFlatViewField | undefined {
     if (!isDefined(previousLabelIdentifierFieldMetadataUniversalIdentifier)) {
+      return undefined;
+    }
+
+    // Relabeling away from a field deleted in the same operation (e.g. a
+    // manifest sync removing the field): there is nothing to restore.
+    const previousLabelIdentifierDeletedInSameBatch = isDefined(
+      allFlatEntityOperationRecordByMetadataName.fieldMetadata
+        ?.flatEntityToDelete[
+        previousLabelIdentifierFieldMetadataUniversalIdentifier
+      ],
+    );
+
+    if (previousLabelIdentifierDeletedInSameBatch) {
       return undefined;
     }
 
@@ -176,6 +193,24 @@ export class ObjectRecordPageLabelIdentifierOnUpdateSideEffectHandlerService ext
       ];
 
     if (!isDefined(previousLabelIdentifierFlatFieldMetadata)) {
+      return undefined;
+    }
+
+    // Pending pair dedup: a caller-authored view field for the previous label
+    // identifier can already be part of the same batch (manifest sync).
+    const pairAlreadyPending = Object.values(
+      allFlatEntityOperationRecordByMetadataName.viewField?.flatEntityToCreate ??
+        {},
+    ).some(
+      (pendingFlatViewField) =>
+        (pendingFlatViewField as UniversalFlatViewField)
+          .viewUniversalIdentifier === recordPageViewUniversalIdentifier &&
+        (pendingFlatViewField as UniversalFlatViewField)
+          .fieldMetadataUniversalIdentifier ===
+          previousLabelIdentifierFieldMetadataUniversalIdentifier,
+    );
+
+    if (pairAlreadyPending) {
       return undefined;
     }
 

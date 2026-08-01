@@ -60,6 +60,7 @@ const buildArgs = ({
     isActive?: boolean;
   }[],
   fieldsWidgets = [FIELDS_WIDGET],
+  fieldMetadatasDeletedInBatch = [] as string[],
 } = {}): BuildSideEffectsArgs<'objectMetadata'> =>
   ({
     flatEntity: {
@@ -67,7 +68,18 @@ const buildArgs = ({
       applicationUniversalIdentifier: APPLICATION_UNIVERSAL_IDENTIFIER,
       labelIdentifierFieldMetadataUniversalIdentifier: newLabelIdentifier,
     },
-    allFlatEntityOperationRecordByMetadataName: {},
+    allFlatEntityOperationRecordByMetadataName: {
+      fieldMetadata: {
+        flatEntityToCreate: {},
+        flatEntityToUpdate: {},
+        flatEntityToDelete: Object.fromEntries(
+          fieldMetadatasDeletedInBatch.map((fieldUniversalIdentifier) => [
+            fieldUniversalIdentifier,
+            { universalIdentifier: fieldUniversalIdentifier },
+          ]),
+        ),
+      },
+    },
     relatedFlatEntityMaps: {
       flatObjectMetadataMaps: {
         byUniversalIdentifier: {
@@ -251,6 +263,37 @@ describe('ObjectRecordPageLabelIdentifierOnUpdateSideEffectHandlerService', () =
         Object.values(result.operations.viewField?.flatEntityToCreate ?? {}),
       ).toHaveLength(0);
     }
+  });
+
+  it('should not restore a previous label identifier deleted in the same batch', () => {
+    const result = handler.buildSideEffects(
+      buildArgs({
+        recordPageViewFields: [
+          {
+            universalIdentifier: NEW_LABEL_VIEW_FIELD_UNIVERSAL_IDENTIFIER,
+            fieldMetadataUniversalIdentifier:
+              NEW_LABEL_FIELD_UNIVERSAL_IDENTIFIER,
+          },
+        ],
+        fieldMetadatasDeletedInBatch: [
+          PREVIOUS_LABEL_FIELD_UNIVERSAL_IDENTIFIER,
+        ],
+      }),
+    );
+
+    expect(result.status).toBe('success');
+
+    if (result.status !== 'success') {
+      throw new Error('expected success');
+    }
+
+    expect(
+      Object.values(result.operations.viewField?.flatEntityToCreate ?? {}),
+    ).toHaveLength(0);
+    // The exclusion half still applies.
+    expect(
+      Object.values(result.operations.viewField?.flatEntityToDelete ?? {}),
+    ).toHaveLength(1);
   });
 
   it('should not restore the previous label identifier when no active FIELDS widget references the view', () => {
