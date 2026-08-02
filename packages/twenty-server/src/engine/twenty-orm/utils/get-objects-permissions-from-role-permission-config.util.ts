@@ -7,9 +7,9 @@ import { isDefined } from 'twenty-shared/utils';
 import { type RolePermissionConfig } from 'src/engine/twenty-orm/types/role-permission-config';
 import { computePermissionIntersection } from 'src/engine/twenty-orm/utils/compute-permission-intersection.util';
 
-// Mirrors what WorkspaceEntityManager grants the repository, so callers that
-// read permissions ahead of a query (tool descriptors, selectable fields) see
-// the same result the query itself will enforce.
+// Intersections mirror what WorkspaceEntityManager grants the repository, so
+// callers reading permissions ahead of a query (tool descriptors, selectable
+// fields) see what the query itself will enforce.
 // Multi-role union is not ready — use the first assigned role only.
 export const getObjectsPermissionsFromRolePermissionConfig = ({
   rolesPermissions,
