@@ -13,7 +13,9 @@ import { NoPermissionGuard } from 'src/engine/guards/no-permission.guard';
 import { PublicEndpointGuard } from 'src/engine/guards/public-endpoint.guard';
 
 type RedeemedIdentity = {
+  subject: string;
   email: string;
+  customerId: string;
   externalTenantId: string;
   externalUserId?: string;
 };
@@ -51,13 +53,22 @@ export class AutoFlowAuthController {
       if (!redeemResponse.ok) throw new Error('AutoFlow code redemption failed');
       const identity = (await redeemResponse.json()) as RedeemedIdentity;
       const workspace = await this.workspaceRepository.findOneBy({ id: identity.externalTenantId });
-      const user = await this.userService.findUserByEmailWithWorkspaces(identity.email.toLowerCase());
-      if (!workspace || !user || (identity.externalUserId && identity.externalUserId !== user.id)) {
+      let user = await this.userService.findUserByEmailWithWorkspaces(identity.email.toLowerCase());
+      if (!workspace || (identity.externalUserId && identity.externalUserId !== user?.id)) {
         throw new Error('Mapped CRM user or workspace not found');
       }
-      if (!user.userWorkspaces.some((membership) => membership.workspaceId === workspace.id)) {
-        throw new Error('CRM workspace membership not found');
+      if (!user?.userWorkspaces.some((membership) => membership.workspaceId === workspace.id)) {
+        const { userData } = this.authService.formatUserDataPayload(
+          { email: identity.email },
+          user,
+        );
+        ({ user } = await this.authService.signInUp({
+          userData,
+          workspace,
+          authParams: { provider: AuthProviderEnum.SSO },
+        }));
       }
+      if (!identity.externalUserId) await this.linkIdentity(identity, user.id, user.email);
       const loginToken = await this.loginTokenService.generateLoginToken(
         user.email,
         workspace.id,
@@ -67,5 +78,30 @@ export class AutoFlowAuthController {
     } catch {
       return response.redirect(`${publicUrl.replace(/\/$/, '')}/signin?error=autoflow_sso_failed`);
     }
+  }
+
+  private async linkIdentity(
+    identity: RedeemedIdentity,
+    externalUserId: string,
+    email: string,
+  ) {
+    const linkResponse = await fetch(
+      `${process.env.AUTOFLOW_SSO_URL?.replace(/\/$/, '')}/api/auth/sso/link`,
+      {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-autoflow-sso-secret': process.env.AUTOFLOW_SSO_CLIENT_SECRET ?? '',
+        },
+        body: JSON.stringify({
+          audience: 'twenty',
+          subject: identity.subject,
+          customerId: identity.customerId,
+          externalUserId,
+          email,
+        }),
+      },
+    );
+    if (!linkResponse.ok) throw new Error('AutoFlow user link failed');
   }
 }
