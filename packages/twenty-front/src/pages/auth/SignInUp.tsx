@@ -117,7 +117,7 @@ export const SignInUp = () => {
     }
 
     if (isGlobalScope) {
-      return t`Welcome to Twenty`;
+      return t`Welcome to CRM AutoFlow`;
     }
 
     const workspaceName = workspacePublicData?.displayName;
