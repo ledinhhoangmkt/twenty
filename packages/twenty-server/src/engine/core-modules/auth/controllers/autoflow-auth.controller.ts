@@ -18,6 +18,8 @@ type RedeemedIdentity = {
   customerId: string;
   externalTenantId: string;
   externalUserId?: string;
+  selectedBrandId?: string;
+  externalBrandId?: string;
 };
 
 @Controller('auth/autoflow')
@@ -74,7 +76,14 @@ export class AutoFlowAuthController {
         workspace.id,
         AuthProviderEnum.SSO,
       );
-      return response.redirect(this.authService.computeRedirectURI({ loginToken: loginToken.token, workspace }));
+      const returnToPath = identity.externalBrandId
+        ? `/object/brand/${encodeURIComponent(identity.externalBrandId)}`
+        : undefined;
+      return response.redirect(this.authService.computeRedirectURI({
+        loginToken: loginToken.token,
+        workspace,
+        returnToPath,
+      }));
     } catch {
       return response.redirect(`${publicUrl.replace(/\/$/, '')}/signin?error=autoflow_sso_failed`);
     }
